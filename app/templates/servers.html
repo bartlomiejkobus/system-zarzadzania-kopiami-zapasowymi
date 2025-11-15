@@ -1,0 +1,258 @@
+{% extends 'base.html' %} {% block title %}Serwery - Menedżer kopii zapasowych{%
+endblock %} {% block content %}
+<div class="mt-4">
+  <h1>Serwery</h1>
+
+  <div class="mb-3">
+    <button class="btn btn-success me-2" id="add-server">Dodaj</button>
+    <button class="btn btn-warning me-2" id="edit-server" disabled>
+      Edytuj
+    </button>
+    <button class="btn btn-danger" id="delete-server" disabled>Usuń</button>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-striped table-hover">
+      <thead>
+        <tr>
+          <th scope="col"><input type="checkbox" id="select-all" /></th>
+          <th scope="col">Nazwa</th>
+          <th scope="col">Host (IP / DNS)</th>
+          <th scope="col">Port SSH</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for server in servers %}
+        <tr>
+          <td>
+            <input
+              type="checkbox"
+              class="select-server"
+              data-server-id="{{ server.id }}"
+            />
+          </td>
+          <td>{{ server.name }}</td>
+          <td>{{ server.hostname }}</td>
+          <td>{{ server.port }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="modal fade" id="addServerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <form method="POST" action="{{ url_for('servers.add') }}">
+          <div class="modal-header">
+            <h5 class="modal-title">Dodaj serwer</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label">Nazwa serwera</label>
+              <input type="text" class="form-control" name="name" required />
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Hostname / IP</label>
+              <input
+                type="text"
+                class="form-control"
+                name="hostname"
+                required
+              />
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Port SSH</label>
+              <input
+                type="number"
+                class="form-control"
+                name="port"
+                value="22"
+                required
+              />
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Anuluj
+            </button>
+            <button type="submit" class="btn btn-primary">Zapisz</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="modal fade" id="editServerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <form method="POST" id="edit-server-form">
+          <div class="modal-header">
+            <h5 class="modal-title">Edytuj serwer</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label">Nowa nazwa</label>
+              <input
+                type="text"
+                class="form-control"
+                name="name"
+                id="edit-server-name"
+                required
+              />
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Anuluj
+            </button>
+            <button type="submit" class="btn btn-primary">Zapisz</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <form
+    id="delete-form"
+    method="POST"
+    action="{{ url_for('servers.delete') }}"
+  ></form>
+  <div
+    class="modal fade"
+    id="deleteConfirmModal"
+    tabindex="-1"
+    aria-hidden="true"
+  >
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Potwierdzenie usunięcia</h5>
+          <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="modal"
+          ></button>
+        </div>
+
+        <div class="modal-body">
+          <p id="delete-count-text">
+            Czy na pewno chcesz usunąć wybrane serwery?
+          </p>
+        </div>
+
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            data-bs-dismiss="modal"
+          >
+            Anuluj
+          </button>
+          <button type="button" class="btn btn-danger" id="confirm-delete">
+            Usuń
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block js %}
+<script>
+  const selectAll = document.getElementById("select-all");
+  const checkboxes = document.querySelectorAll(".select-server");
+  const editBtn = document.getElementById("edit-server");
+  const deleteBtn = document.getElementById("delete-server");
+
+  selectAll.addEventListener("change", () => {
+    checkboxes.forEach((cb) => (cb.checked = selectAll.checked));
+    updateButtons();
+  });
+
+  function updateButtons() {
+    const anyChecked = Array.from(checkboxes).some((cb) => cb.checked);
+    const singleChecked =
+      Array.from(checkboxes).filter((cb) => cb.checked).length === 1;
+
+    editBtn.disabled = !singleChecked;
+    deleteBtn.disabled = !anyChecked;
+  }
+
+  checkboxes.forEach((cb) => cb.addEventListener("change", updateButtons));
+
+  document.getElementById("add-server").addEventListener("click", () => {
+    const modal = new bootstrap.Modal(
+      document.getElementById("addServerModal")
+    );
+    modal.show();
+  });
+
+  document.getElementById("edit-server").addEventListener("click", () => {
+    const checked = Array.from(
+      document.querySelectorAll(".select-server")
+    ).filter((cb) => cb.checked);
+
+    if (checked.length !== 1) return;
+
+    const serverId = checked[0].dataset.serverId;
+    const serverName = checked[0].closest("tr").children[1].innerText;
+
+    document.getElementById("edit-server-name").value = serverName;
+    document.getElementById("edit-server-form").action =
+      "/servers/edit/" + serverId;
+
+    const modal = new bootstrap.Modal(
+      document.getElementById("editServerModal")
+    );
+    modal.show();
+  });
+  document.getElementById("delete-server").addEventListener("click", () => {
+    const checked = Array.from(
+      document.querySelectorAll(".select-server")
+    ).filter((cb) => cb.checked);
+
+    if (checked.length === 0) return;
+
+    const modal = new bootstrap.Modal(
+      document.getElementById("deleteConfirmModal")
+    );
+    modal.show();
+
+    document.getElementById("confirm-delete").onclick = () => {
+      const form = document.getElementById("delete-form");
+      form.innerHTML = "";
+
+      checked.forEach((cb) => {
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = "server_ids";
+        input.value = cb.dataset.serverId;
+        form.appendChild(input);
+      });
+
+      form.submit();
+    };
+  });
+</script>
+{% endblock %}

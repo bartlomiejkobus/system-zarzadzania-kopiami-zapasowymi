@@ -1,0 +1,347 @@
+{% extends "base.html" %} {% block title %}Ustawienia{% endblock %} {% block css
+%}
+<style>
+  .code-block {
+    border: 1px solid #dee2e6;
+    border-radius: 5px;
+    background-color: #f8f9fa;
+  }
+  .code-block pre {
+    margin: 0;
+    padding: 10px;
+    overflow-x: auto;
+    background-color: #f8f9fa;
+  }
+  .code-header {
+    font-size: 0.875rem;
+  }
+</style>
+{% endblock %} {% block content %}
+<div class="container">
+  <h1>Ustawienia konta</h1>
+  <hr />
+
+  <div class="mb-4">
+    <h3>Zmiana hasła</h3>
+    <form method="POST" action="/settings/change-password">
+      <div class="mb-3">
+        <label for="current_password" class="form-label">Aktualne hasło</label>
+        <input
+          type="password"
+          class="form-control"
+          id="current_password"
+          name="current_password"
+          required
+        />
+      </div>
+      <div class="mb-3">
+        <label for="new_password" class="form-label">Nowe hasło</label>
+        <input
+          type="password"
+          class="form-control"
+          id="new_password"
+          name="new_password"
+          required
+        />
+      </div>
+      <div class="mb-3">
+        <label for="confirm_password" class="form-label"
+          >Potwierdź nowe hasło</label
+        >
+        <input
+          type="password"
+          class="form-control"
+          id="confirm_password"
+          name="confirm_password"
+          required
+        />
+      </div>
+      <button type="submit" class="btn btn-warning">Zmień hasło</button>
+    </form>
+  </div>
+
+  <hr />
+  <div class="mb-4">
+    <h3>Klucz publiczny GPG</h3>
+    <form method="POST" action="/settings/gpg-key">
+      <div class="mb-3">
+        <label for="gpg_key" class="form-label"
+          >Wprowadź klucz publiczny GPG</label
+        >
+        <textarea
+          class="form-control"
+          id="gpg_key"
+          name="gpg_key"
+          rows="4"
+          placeholder="-----BEGIN PGP PUBLIC KEY BLOCK-----"
+        >
+{{ current_user.public_key_gpg or '' }}</textarea
+        >
+        <small class="d-block mt-2">
+          <a href="#" data-bs-toggle="modal" data-bs-target="#gpgHelpModal"
+            >Skąd wziąć klucz?</a
+          >
+        </small>
+      </div>
+      <button type="submit" class="btn btn-warning">Zapisz klucz</button>
+    </form>
+  </div>
+  <hr />
+  <div
+    class="modal fade"
+    id="gpgHelpModal"
+    tabindex="-1"
+    aria-labelledby="gpgHelpModalLabel"
+    aria-hidden="true"
+  >
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="gpgHelpModalLabel">
+            Instrukcja: Generowanie klucza GPG
+          </h5>
+          <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="modal"
+            aria-label="Zamknij"
+          ></button>
+        </div>
+        <div class="modal-body">
+          <p>
+            Para kluczy GPG służy do szyfrowania i odszyfrowania kopii
+            zapasowych.
+          </p>
+          <p>
+            Na swoim komputerze wygeneruj parę za pomocą poniższego skrytu
+            skryptu:
+          </p>
+
+          <div class="code-block position-relative mb-3">
+            <div
+              class="code-header d-flex justify-content-between align-items-center p-1 bg-light border-bottom"
+            >
+              <span class="fw-bold">bash</span>
+              <button
+                class="btn btn-sm btn-outline-secondary"
+                onclick="copyCode(this)"
+              >
+                Skopiuj kod
+              </button>
+            </div>
+            <pre
+              class="mb-0"
+            ><code class="bash">{{ gpg_script_content }}</code></pre>
+          </div>
+
+          <p>
+            Klucz publiczny (<code>public.key</code>) wklej tutaj do ustawień
+            systemu. Prywatny klucz (<code>private.key</code>) zachowaj
+            wyłącznie u siebie!
+          </p>
+        </div>
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            data-bs-dismiss="modal"
+          >
+            Zamknij
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mb-4">
+    <h3>E-mail</h3>
+    <form method="POST" action="/settings/email" id="emailForm">
+      <div class="mb-3">
+        <label for="email" class="form-label">Adres e-mail</label>
+        <input
+          type="email"
+          class="form-control"
+          id="email"
+          name="email"
+          placeholder="Wprowadź adres e-mail"
+          value="{{ current_user.email_address or '' }}"
+        />
+      </div>
+      <button type="submit" class="btn btn-success">Zapisz e-mail</button>
+    </form>
+  </div>
+  <div
+    class="modal fade"
+    id="verifyEmailModal"
+    tabindex="-1"
+    aria-hidden="true"
+  >
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Potwierdzenie adresu e-mail</h5>
+          <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="modal"
+            aria-label="Zamknij"
+          ></button>
+        </div>
+        <div class="modal-body">
+          <p>Wprowadź kod wysłany na Twój adres e-mail:</p>
+          <input
+            type="text"
+            id="verificationCode"
+            class="form-control"
+            placeholder="Kod weryfikacyjny"
+          />
+        </div>
+        <div class="modal-footer">
+          <button type="button" id="confirmCodeBtn" class="btn btn-success">
+            Zatwierdź
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <hr />
+
+  <div class="mb-4">
+    <h3>Powiadomienia e-mail</h3>
+    <form method="POST" action="/settings/email-notifications">
+      <div class="form-check form-switch">
+        <input
+          class="form-check-input"
+          type="checkbox"
+          id="email_notifications"
+          name="email_notifications"
+          {%
+          if
+          current_user.email_address
+          %}{%
+          else
+          %}disabled{%
+          endif
+          %}
+          {%
+          if
+          current_user.are_notifications_enabled
+          %}checked{%
+          endif
+          %}
+        />
+        <label class="form-check-label" for="email_notifications">
+          Włącz powiadomienia e-mail
+        </label>
+      </div>
+      <small class="text-muted">
+        {% if not current_user.email_address %} Wymaga dodania adresu e-mail. {%
+        endif %}
+      </small>
+      <br />
+      <button
+        type="submit"
+        class="btn btn-success mt-2"
+        {%
+        if
+        not
+        current_user.email_address
+        %}disabled{%
+        endif
+        %}
+      >
+        Zapisz
+      </button>
+    </form>
+  </div>
+
+  <hr />
+
+  <div class="mb-4">
+    <h3>Uwierzytelnienie dwuskładnikowe (2FA)</h3>
+    <form method="POST" action="/settings/2fa">
+      <div class="form-check form-switch">
+        <input
+          class="form-check-input"
+          type="checkbox"
+          id="enable_2fa"
+          name="enable_2fa"
+          {%
+          if
+          current_user.email_address
+          %}{%
+          else
+          %}disabled{%
+          endif
+          %}
+          {%
+          if
+          current_user.is_2fa_enabled
+          %}checked{%
+          endif
+          %}
+        />
+        <label class="form-check-label" for="enable_2fa">Włącz 2FA</label>
+      </div>
+      <small class="text-muted">
+        {% if not current_user.email_address %} 2FA wymaga dodania adresu
+        e-mail. {% endif %}
+      </small>
+      <br />
+      <button
+        type="submit"
+        class="btn btn-success mt-2"
+        {%
+        if
+        not
+        current_user.email_address
+        %}disabled{%
+        endif
+        %}
+      >
+        Zapisz
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %} {% block js %}
+<script>
+  function copyCode(button) {
+    const code = button.closest(".code-block").querySelector("pre code").innerText;
+    navigator.clipboard.writeText(code)
+      .then(() => {
+        button.innerText = "Skopiowano!";
+        setTimeout(() => (button.innerText = "Skopiuj kod"), 2000);
+      })
+      .catch(err => console.error("Błąd kopiowania:", err));
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    const modalEl = document.getElementById("verifyEmailModal");
+    const modal = new bootstrap.Modal(modalEl);
+    const confirmBtn = document.getElementById("confirmCodeBtn");
+
+    {% if show_modal %}
+    modal.show();
+    {% endif %}
+
+    confirmBtn.addEventListener("click", () => {
+      const code = document.getElementById("verificationCode").value.trim();
+      if (!code) return alert("Wprowadź kod weryfikacyjny.");
+
+      const form = document.createElement("form");
+      form.method = "POST";
+      form.action = "/settings/verify-email";
+
+      const input = document.createElement("input");
+      input.type = "hidden";
+      input.name = "code";
+      input.value = code;
+
+      form.appendChild(input);
+      document.body.appendChild(form);
+      form.submit();
+    });
+  });
+</script>
+{% endblock %}

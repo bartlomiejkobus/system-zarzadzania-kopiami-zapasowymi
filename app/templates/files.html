@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+
+{% block title %}Pliki - Menedżer kopii zapasowych{% endblock %}
+
+{% block content %}
+<div class="mt-4">
+    <h1>Pliki kopii zapasowych</h1>
+
+    <div class="table-responsive">
+        <table class="table table-striped table-hover">
+            <thead>
+                <tr>
+                    <th scope="col"></th>
+                    <th scope="col">Nazwa zadania</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for task in tasks %}
+                <tr class="task-row" data-task-id="{{ task.id }}">
+                    <td><button class="btn btn-sm btn-outline-primary toggle-btn">+</button></td>
+                    <td>{{ task.name }}</td>
+                </tr>
+                <tr class="file-rows" data-task-id="{{ task.id }}">
+                    <td colspan="2">
+                        <div class="mb-2">
+                            <button class="btn btn-success btn-sm download-selected">Pobierz zaznaczone</button>
+                        </div>
+
+                        <table class="table mb-0">
+                            <thead>
+                                <tr>
+                                    <th><input type="checkbox" class="select-all"></th>
+                                    <th>Nazwa pliku</th>
+                                    <th>Rozmiar</th>
+                                    <th>Suma kontrolna</th>
+                                    <th>Data utworzenia</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for file in task.files %}
+                                <tr>
+                                    <td><input type="checkbox" class="file-checkbox" data-file-id="{{ file.id }}"></td>
+                                    <td>{{ file.name }}</td>
+                                    <td>{{ file.size }}</td>
+                                    <td>{{ file.checksum }}</td>
+                                    <td>{{ file.created.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<style>
+.file-rows { display: none; }
+.task-row { cursor: pointer; }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const taskRows = document.querySelectorAll('.task-row');
+
+    taskRows.forEach(taskRow => {
+        const btn = taskRow.querySelector('.toggle-btn');
+        const taskId = taskRow.dataset.taskId;
+        const fileRow = document.querySelector(`.file-rows[data-task-id='${taskId}']`);
+
+        taskRow.addEventListener('click', () => {
+            if(fileRow.style.display === 'table-row') {
+                fileRow.style.display = 'none';
+                btn.textContent = '+';
+            } else {
+                fileRow.style.display = 'table-row';
+                btn.textContent = '−';
+            }
+        });
+
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if(fileRow.style.display === 'table-row') {
+                fileRow.style.display = 'none';
+                btn.textContent = '+';
+            } else {
+                fileRow.style.display = 'table-row';
+                btn.textContent = '−';
+            }
+        });
+
+        const selectAllCheckbox = fileRow.querySelector('.select-all');
+        const fileCheckboxes = fileRow.querySelectorAll('.file-checkbox');
+
+        selectAllCheckbox.addEventListener('change', () => {
+            fileCheckboxes.forEach(cb => cb.checked = selectAllCheckbox.checked);
+        });
+
+        const downloadBtn = fileRow.querySelector('.download-selected');
+        downloadBtn.addEventListener('click', () => {
+            const selectedIds = Array.from(fileCheckboxes)
+                .filter(cb => cb.checked)
+                .map(cb => cb.dataset.fileId);
+            if(selectedIds.length === 0){
+                alert('Nie zaznaczono żadnych plików!');
+                return;
+            }
+            console.log('Pobierz pliki o ID:', selectedIds);
+            alert('Pobierz pliki: ' + selectedIds.join(', '));
+        });
+    });
+});
+</script>
+{% endblock %}

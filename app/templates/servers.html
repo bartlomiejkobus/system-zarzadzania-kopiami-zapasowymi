@@ -19,6 +19,7 @@ endblock %} {% block content %}
           <th scope="col">Nazwa</th>
           <th scope="col">Host (IP / DNS)</th>
           <th scope="col">Port SSH</th>
+          <th scope="col"></th>
         </tr>
       </thead>
       <tbody>
@@ -34,6 +35,15 @@ endblock %} {% block content %}
           <td>{{ server.name }}</td>
           <td>{{ server.hostname }}</td>
           <td>{{ server.port }}</td>
+          <td>
+          {% if server.status == "nieaktywny" %}
+            <button class="btn btn-warning btn-sm" onclick="activateServer({{ server.id }})">
+              Aktywuj serwer
+            </button>
+          {% else %}
+            <span class="badge bg-success">Aktywny</span>
+          {% endif %}
+        </td>
         </tr>
         {% endfor %}
       </tbody>
@@ -177,6 +187,43 @@ endblock %} {% block content %}
       </div>
     </div>
   </div>
+  <div class="modal fade" id="activateServerModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title">Aktywacja serwera</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+
+      </div>
+
+      <div class="modal-body">
+        <div id="connection-status" class="mt-2"></div>
+
+        <p>
+          Uruchom poniższy skrypt na serwerze, aby aktywować połączenie z systemem:
+        </p>
+
+        <div class="code-block position-relative mb-3">
+          <div class="code-header d-flex justify-content-between align-items-center p-1 bg-light border-bottom">
+            <span class="fw-bold">bash</span>
+            <button class="btn btn-sm btn-outline-secondary" onclick="copyCode(this)">Skopiuj kod</button>
+          </div>
+          <pre class="mb-0"><code class="bash">{{ install_script }}</code></pre>
+        </div>
+
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-primary me-auto" id="test-connection-btn" onclick="testServerConnection()">
+      Sprawdź połączenie
+        </button>
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Zamknij</button>
+      </div>
+
+    </div>
+  </div>
+</div>
 </div>
 {% endblock %} {% block js %}
 <script>
@@ -254,5 +301,52 @@ endblock %} {% block content %}
       form.submit();
     };
   });
+  function copyCode(btn) {
+  const code = btn.closest(".code-block").querySelector("code").innerText;
+  navigator.clipboard.writeText(code);
+  btn.innerText = "Skopiowano!";
+  setTimeout(() => (btn.innerText = "Skopiuj kod"), 1500);
+}
+let CURRENT_SERVER_ID = null;
+
+function activateServer(id) {
+    CURRENT_SERVER_ID = id;
+    new bootstrap.Modal(document.getElementById('activateServerModal')).show();
+}
+function testServerConnection() {
+    const btn = document.getElementById("test-connection-btn");
+    const statusDiv = document.getElementById("connection-status");
+    const modalEl = document.getElementById("activateServerModal");
+    const modal = bootstrap.Modal.getInstance(modalEl);
+
+    btn.disabled = true;
+    btn.innerText = "Sprawdzanie połączenia...";
+    statusDiv.innerHTML = "";
+
+    fetch(`/servers/test-connection/${CURRENT_SERVER_ID}`, { method: "POST" })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                statusDiv.innerHTML = '<div class="alert alert-success mb-0">Połączenie udane - serwer aktywowany!</div>';
+                
+                modalEl.addEventListener('hidden.bs.modal', () => {
+                    location.reload();
+                }, { once: true });
+            } else {
+                statusDiv.innerHTML = `<div class="alert alert-danger mb-0">
+                    Błąd połączenia. Sprawdź czy skrypt został poprawnie wykonany, 
+                    dane serwera są poprawne i połączenie jest dostępne.<br>
+                    Szczegóły: ${data.error}
+                </div>`;
+            }
+        })
+        .catch(err => {
+            statusDiv.innerHTML = `<div class="alert alert-danger mb-0">Błąd sieci: ${err}</div>`;
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerText = "Sprawdź połączenie";
+        });
+}
 </script>
 {% endblock %}

@@ -54,7 +54,7 @@ class Settings(db.Model, UserMixin):
         private_key = ed25519.Ed25519PrivateKey.generate()
         self.private_key_ssh = private_key.private_bytes(
             encoding=serialization.Encoding.PEM,
-            format=serialization.PrivateFormat.PKCS8,
+            format=serialization.PrivateFormat.OpenSSH,
             encryption_algorithm=serialization.NoEncryption()
         ).decode()
         self.public_key_ssh = private_key.public_key().public_bytes(

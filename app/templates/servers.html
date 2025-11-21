@@ -23,29 +23,35 @@ endblock %} {% block content %}
         </tr>
       </thead>
       <tbody>
-        {% for server in servers %}
-        <tr>
-          <td>
-            <input
-              type="checkbox"
-              class="select-server"
-              data-server-id="{{ server.id }}"
-            />
-          </td>
-          <td>{{ server.name }}</td>
-          <td>{{ server.hostname }}</td>
-          <td>{{ server.port }}</td>
-          <td>
-          {% if server.status == "nieaktywny" %}
-            <button class="btn btn-warning btn-sm" onclick="activateServer({{ server.id }})">
-              Aktywuj serwer
-            </button>
+          {% if servers %}
+              {% for server in servers %}
+              <tr>
+                <td>
+                  <input
+                    type="checkbox"
+                    class="select-server"
+                    data-server-id="{{ server.id }}"
+                  />
+                </td>
+                <td>{{ server.name }}</td>
+                <td>{{ server.hostname }}</td>
+                <td>{{ server.port }}</td>
+                <td>
+                {% if server.status == "nieaktywny" %}
+                  <button class="btn btn-warning btn-sm" onclick="activateServer({{ server.id }})">
+                    Aktywuj serwer
+                  </button>
+                {% else %}
+                  <span class="badge bg-success">Aktywny</span>
+                {% endif %}
+              </td>
+              </tr>
+              {% endfor %}
           {% else %}
-            <span class="badge bg-success">Aktywny</span>
+              <tr>
+                  <td colspan="5" class="text-center text-muted">Brak serwerów</td>
+              </tr>
           {% endif %}
-        </td>
-        </tr>
-        {% endfor %}
       </tbody>
     </table>
   </div>

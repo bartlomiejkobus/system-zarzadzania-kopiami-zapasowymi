@@ -20,7 +20,8 @@ log "INFO" "Installer started at $(date -u +'%F %T UTC')" "install"
 # ---------------------------
 # ZMIENNE MIEJSCOWE (zamieniane przez aplikację)
 # ---------------------------
-CENTRAL_SSH_PUB_KEY='__SSH_PUB_KEY__'   # klucz publiczny SSH centralnego serwera
+COMMAND_SSH_PUB_KEY='__COMMAND_SSH_PUB_KEY__'   # klucz publiczny SSH centralnego serwera do komend
+RSYNC_SSH_PUB_KEY='__RSYNC_SSH_PUB_KEY__'   # klucz publiczny SSH centralnego serwera do rsync
 ADMIN_GPG_PUB='__GPG_PUB_KEY__'         # klucz publiczny GPG administratora
 # ---------------------------
 
@@ -159,7 +160,6 @@ fi
 if [[ "$CMD" =~ ^run_backup[[:space:]]+([A-Za-z0-9][A-Za-z0-9_-]*)$ ]]; then
   TASK="${BASH_REMATCH[1]}"
   log "INFO" "Allowed: run_backup task=$TASK" "trigger"
-  echo "Uruchamianie zadania kopii zapasowej: $TASK"
   exec /usr/bin/sudo /usr/local/sbin/run_backup.sh "$TASK"
 fi
 
@@ -198,7 +198,9 @@ echo "[INFO] wyzwalacz zainstalowany: $TRIGGER"
 log "INFO" "installed trigger $TRIGGER" "install"
 
 #  Utworzenie wpisu w authorized_keys z wymuszonym użyciem wyzwalacza
-echo "command=\"$TRIGGER\",no-port-forwarding,no-X11-forwarding,no-agent-forwarding,no-pty $CENTRAL_SSH_PUB_KEY" > "$AUTHORIZED_KEYS"
+echo "command=\"$TRIGGER\",no-port-forwarding,no-X11-forwarding,no-agent-forwarding,no-pty $COMMAND_SSH_PUB_KEY" > "$AUTHORIZED_KEYS"
+echo "command=\"/usr/bin/rrsync /srv/backup_files\",no-agent-forwarding,no-port-forwarding,no-pty,no-user-rc,no-X11-forwarding $RSYNC_SSH_PUB_KEY" >> "$AUTHORIZED_KEYS"
+
 chown "$BACKUP_USER:$BACKUP_USER" "$AUTHORIZED_KEYS"
 chmod 600 "$AUTHORIZED_KEYS"
 
@@ -267,7 +269,8 @@ if ! find "$OUT_DIR" -mindepth 1 | read -r; then
 fi
 
 # Tworzenie archiwum tar
-TAR_PATH="${TASK_DIR}/${TASK}.tar.gz"
+timestamp=$(date +"%Y%m%d%H%M%S")
+TAR_PATH="${TASK_DIR}/${TASK}_${timestamp}.tar.gz"
 tar -czf "$TAR_PATH" -C "$OUT_DIR" .
 
 # Ustawienie odbiorca GPG
@@ -287,13 +290,13 @@ gpg --batch --yes --trust-model always --recipient "$RECIPIENT" --output "$ENC" 
 FINAL="${FILES_DIR}/$(basename "$ENC")"
 mv -f "$ENC" "$FINAL"
 chmod 600 "$FINAL"
-chown root:root "$FINAL"
+chown -R backup_user:backup_user "$FILES_DIR"
 
 # Czyszczenie katalogu roboczego
 rm -rf "$TASK_DIR"
 
 log "INFO" "Encrypted archive ready: $FINAL" "run_backup"
-echo "Archiwum zaszyfrowane gotowe: $FINAL"
+echo $(basename "$ENC")
 exit 0
 EOF
 
@@ -359,10 +362,10 @@ cat > "$OUT" <<TASK_EOF
 set -euo pipefail
 
 # Nazwa zadania:
-TASK_NAME="${TASK}"
+TASK="${TASK}"
 
 # Lokalizacja wyjściowa zadania
-OUT_DIR="/srv/backup_tmp/\${TASK_NAME}/output"
+OUT_DIR="/srv/backup_tmp/${TASK}/output"
 
 # Utwórz katalog wyjściowy
 mkdir -p "\$OUT_DIR"
@@ -377,7 +380,7 @@ mkdir -p "\$OUT_DIR"
 #   \$OUT_DIR
 #
 # Jeśli pozostawisz tą sekcję niezmienioną, zadanie zakończy się błędem.
-echo "BŁĄD: Polecenia zadania kopii zapasowej nie zostały skonfigurowane dla zadania: $TASK_NAME" >&2
+echo "BŁĄD: Polecenia zadania kopii zapasowej nie zostały skonfigurowane dla zadania: $TASK" >&2
 exit 99
 # ================================================================
 TASK_EOF
@@ -535,7 +538,7 @@ else
     log "INFO" "User $BACKUP_USER does not exist" "uninstall"
 fi
 
-Sprawdzenie, że katalog .ssh został usunięty
+# Sprawdzenie, że katalog .ssh został usunięty
 if rm -rf "${BACKUP_HOME}/.ssh" 2>/dev/null; then
     log "INFO" "Removed SSH directory ${BACKUP_HOME}/.ssh" "uninstall"
 else

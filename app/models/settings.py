@@ -26,8 +26,10 @@ class Settings(db.Model, UserMixin):
     is_2fa_enabled = db.Column(db.Boolean, default=False)
     are_notifications_enabled = db.Column(db.Boolean, default=False)
     public_key_gpg = db.Column(db.Text, nullable=True)
-    public_key_ssh = db.Column(db.Text, nullable=True)
-    private_key_ssh = db.Column(db.Text, nullable=True)
+    command_public_key_ssh = db.Column(db.Text, nullable=True)
+    command_private_key_ssh = db.Column(db.Text, nullable=True)
+    rsync_public_key_ssh = db.Column(db.Text, nullable=True)
+    rsync_private_key_ssh = db.Column(db.Text, nullable=True)
 
     def set_password(self, password: str, default_password: str = None):
         self.password_hash = ph.hash(password)
@@ -50,17 +52,27 @@ class Settings(db.Model, UserMixin):
     def has_gpg_key(self) -> bool:
         return bool(self.public_key_gpg and self.public_key_gpg.strip())
     
-    def generate_ssh_keys(self):
+    def generate_ed25519_pair(self):
         private_key = ed25519.Ed25519PrivateKey.generate()
-        self.private_key_ssh = private_key.private_bytes(
+        private_ssh = private_key.private_bytes(
             encoding=serialization.Encoding.PEM,
             format=serialization.PrivateFormat.OpenSSH,
             encryption_algorithm=serialization.NoEncryption()
         ).decode()
-        self.public_key_ssh = private_key.public_key().public_bytes(
+
+        public_ssh = private_key.public_key().public_bytes(
             encoding=serialization.Encoding.OpenSSH,
             format=serialization.PublicFormat.OpenSSH
         ).decode()
+
+        return private_ssh, public_ssh
+    
+    def generate_ssh_keys(self):
+        (self.command_private_key_ssh,
+        self.command_public_key_ssh) = self.generate_ed25519_pair()
+
+        (self.rsync_private_key_ssh,
+        self.rsync_public_key_ssh) = self.generate_ed25519_pair()
 
     @property
     def is_authenticated(self):

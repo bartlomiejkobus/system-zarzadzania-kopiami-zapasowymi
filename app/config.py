@@ -21,7 +21,7 @@ class Config:
     
     DEBUG = os.getenv("DEBUG", "False").lower() == "true"
     
-    BACKUP_FOLDER = "/app/backups"
+    BACKUP_FOLDER = "/root/backup_files"
 
     DEFAULT_ADMIN_USERNAME = os.getenv('DEFAULT_ADMIN_USERNAME', 'admin')
     DEFAULT_ADMIN_PASSWORD = os.getenv('DEFAULT_ADMIN_PASSWORD', 'admin123')

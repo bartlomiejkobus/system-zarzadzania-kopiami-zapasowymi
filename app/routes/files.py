@@ -1,11 +1,8 @@
 from flask import Blueprint, render_template, request, send_file, flash, redirect, url_for
-from datetime import datetime
 from flask_login import login_required
 from app.decorators import check_settings
 from app.models.backup_task import BackupTask
 from app.models.backup_file import BackupFile
-from app.db import db
-import os
 
 files_bp = Blueprint('files', __name__, url_prefix='/files')
 

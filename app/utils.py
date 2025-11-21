@@ -1,6 +1,6 @@
 from flask import current_app
 from app.models.settings import Settings
-import paramiko, socket, io
+import paramiko, io
 from app.models.backup_task import BackupTask
 from app.models.backup_file import BackupFile
 import tempfile
@@ -9,7 +9,6 @@ import subprocess
 import hashlib
 from datetime import datetime
 from app.db import db
-from app.config import Config
 from app.models.event import Event
 
 def load_install_script():

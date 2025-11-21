@@ -1,13 +1,12 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app
+from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required
 from app.decorators import check_settings
 from app.db import db
 from app.models.backup_task import BackupTask
 from app.models.server import Server
-from app.utils import execute_ssh_command, rsync_download_file
+from app.utils import execute_ssh_command
 import re
 from croniter import croniter
-from datetime import datetime
 
 
 

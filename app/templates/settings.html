@@ -68,7 +68,15 @@
         <label for="gpg_key" class="form-label"
           >Wprowadź klucz publiczny GPG</label
         >
-<textarea class="form-control" id="gpg_key" name="gpg_key" rows="4" placeholder="-----BEGIN PGP PUBLIC KEY BLOCK-----">{{ current_user.public_key_gpg or '' }}</textarea>
+        <textarea
+          class="form-control"
+          id="gpg_key"
+          name="gpg_key"
+          rows="4"
+          placeholder="-----BEGIN PGP PUBLIC KEY BLOCK-----"
+        >
+{{ current_user.public_key_gpg or '' }}</textarea
+        >
 
         >
         <small class="d-block mt-2">

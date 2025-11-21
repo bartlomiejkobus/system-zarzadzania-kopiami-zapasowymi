@@ -1,31 +1,25 @@
-{% extends 'base.html' %}
-
-{% block title %}Dziennik zdarzeń - Menedżer kopii zapasowych{% endblock %}
-
-{% block content %}
+{% extends 'base.html' %} {% block title %}Dziennik zdarzeń - Menedżer kopii
+zapasowych{% endblock %} {% block content %}
 <div class="mt-4">
-    <h1>Dziennik zdarzeń</h1>
+  <h1>Dziennik zdarzeń</h1>
 
-    {% if events %}
-        <ul class="list-group mt-3">
-            {% for event in events %}
-                <li class="list-group-item 
-                    {% if event.type == 'informacja' %}list-group-item-info
-                    {% elif event.type == 'błąd' %}list-group-item-danger
-                    {% elif event.type == 'logowanie' %}list-group-item-success{% endif %}">
-                    <strong>{{ event.timestamp.strftime("%Y-%m-%d %H:%M:%S") }}</strong>:
-                    {{ event.details }}
-                    {% if event.task %}
-                        <em>(Zadanie: {{ event.task.name }})</em>
-                    {% endif %}
-                    {% if event.server %}
-                        <em>(Serwer: {{ event.server.name }})</em>
-                    {% endif %}
-                </li>
-            {% endfor %}
-        </ul>
-    {% else %}
-        <p class="text-muted mt-3">Brak zdarzeń w dzienniku.</p>
-    {% endif %}
+  {% if events %}
+  <ul class="list-group mt-3">
+    {% for event in events %}
+    <li
+      class="list-group-item {% if event.type == 'informacja' %}list-group-item-info {% elif event.type == 'błąd' %}list-group-item-danger {% elif event.type == 'logowanie' %}list-group-item-success{% endif %}"
+    >
+      <strong>{{ event.timestamp.strftime("%Y-%m-%d %H:%M:%S") }}</strong>: {{
+      event.details }} {% if event.task %}
+      <em>(Zadanie: {{ event.task.name }})</em>
+      {% endif %} {% if event.server %}
+      <em>(Serwer: {{ event.server.name }})</em>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="text-muted mt-3">Brak zdarzeń w dzienniku.</p>
+  {% endif %}
 </div>
 {% endblock %}

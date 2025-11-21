@@ -4,7 +4,6 @@ from app.decorators import check_settings
 from app.models.server import Server
 from app.models.backup_task import BackupTask
 from app.models.backup_file import BackupFile
-from app.db import db
 from app.models.event import Event
 
 dashboard_bp = Blueprint('dashboard', __name__, template_folder='templates')

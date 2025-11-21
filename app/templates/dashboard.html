@@ -1,66 +1,61 @@
-{% extends 'base.html' %}
-
-{% block title %}Kokpit{% endblock %}
-
-{% block content %}
+{% extends 'base.html' %} {% block title %}Kokpit{% endblock %} {% block content
+%}
 <div class="mt-4">
-    <h1>Kokpit</h1>
+  <h1>Kokpit</h1>
 
-    <div class="row g-3 my-3">
-        <div class="col-md-3 col-sm-6">
-            <div class="card text-white bg-primary mb-3">
-                <div class="card-body">
-                    <h5 class="card-title">Serwery</h5>
-                    <p class="card-text display-6">{{ server_count }}</p>
-                </div>
-            </div>
+  <div class="row g-3 my-3">
+    <div class="col-md-3 col-sm-6">
+      <div class="card text-white bg-primary mb-3">
+        <div class="card-body">
+          <h5 class="card-title">Serwery</h5>
+          <p class="card-text display-6">{{ server_count }}</p>
         </div>
-        <div class="col-md-3 col-sm-6">
-            <div class="card text-white bg-success mb-3">
-                <div class="card-body">
-                    <h5 class="card-title">Zadania kopii</h5>
-                    <p class="card-text display-6">{{ task_count }}</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3 col-sm-6">
-            <div class="card text-white bg-danger mb-3">
-                <div class="card-body">
-                    <h5 class="card-title">Nieudane zadania</h5>
-                    <p class="card-text display-6">{{ fails_count }}</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-3 col-sm-6">
-            <div class="card text-dark bg-warning mb-3">
-                <div class="card-body">
-                    <h5 class="card-title">Pliki</h5>
-                    <p class="card-text display-6">{{ file_count }}</p>
-                </div>
-            </div>
-        </div>
+      </div>
     </div>
+    <div class="col-md-3 col-sm-6">
+      <div class="card text-white bg-success mb-3">
+        <div class="card-body">
+          <h5 class="card-title">Zadania kopii</h5>
+          <p class="card-text display-6">{{ task_count }}</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+      <div class="card text-white bg-danger mb-3">
+        <div class="card-body">
+          <h5 class="card-title">Nieudane zadania</h5>
+          <p class="card-text display-6">{{ fails_count }}</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3 col-sm-6">
+      <div class="card text-dark bg-warning mb-3">
+        <div class="card-body">
+          <h5 class="card-title">Pliki</h5>
+          <p class="card-text display-6">{{ file_count }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 <div class="mt-4">
-    <h2>Ostatnie błędy</h2>
-    {% if last_errors %}
-        <ul class="list-group">
-            {% for event in last_errors %}
-                <li class="list-group-item list-group-item-danger">
-                    <strong>{{ event.timestamp.strftime("%Y-%m-%d %H:%M:%S") }}</strong>:
-                    {{ event.details }}
-                    {% if event.task %}
-                        <em>(Zadanie: {{ event.task.name }})</em>
-                    {% endif %}
-                    {% if event.server %}
-                        <em>(Serwer: {{ event.server.name }})</em>
-                    {% endif %}
-                </li>
-            {% endfor %}
-        </ul>
-    {% else %}
-        <p class="text-muted">Brak błędów w dzienniku.</p>
-    {% endif %}
+  <h2>Ostatnie błędy</h2>
+  {% if last_errors %}
+  <ul class="list-group">
+    {% for event in last_errors %}
+    <li class="list-group-item list-group-item-danger">
+      <strong>{{ event.timestamp.strftime("%Y-%m-%d %H:%M:%S") }}</strong>: {{
+      event.details }} {% if event.task %}
+      <em>(Zadanie: {{ event.task.name }})</em>
+      {% endif %} {% if event.server %}
+      <em>(Serwer: {{ event.server.name }})</em>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="text-muted">Brak błędów w dzienniku.</p>
+  {% endif %}
 </div>
 {% endblock %}

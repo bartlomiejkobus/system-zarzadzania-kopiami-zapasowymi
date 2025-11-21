@@ -2,7 +2,6 @@ from flask import Blueprint, render_template
 from flask_login import login_required
 from app.decorators import check_settings
 from app.models.event import Event
-from app.db import db
 
 logs_bp = Blueprint('logs', __name__, url_prefix='/logs')
 

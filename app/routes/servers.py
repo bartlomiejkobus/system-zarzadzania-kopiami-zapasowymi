@@ -1,13 +1,9 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
+from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required
 from app.decorators import check_settings
 from app.db import db
 from app.models.server import Server
 from app.utils import load_install_script, execute_ssh_command
-import paramiko, socket, io
-from app.models.settings import Settings
-from sqlalchemy import and_
-
 
 servers_bp = Blueprint('servers', __name__, url_prefix='/servers')
 

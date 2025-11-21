@@ -1,11 +1,7 @@
 from celery import Celery
 from app import create_app
-from app.db import db
 import os
 from celery.schedules import crontab
-from app.models.backup_task import BackupTask
-from app.config import Config
-from app.utils import execute_ssh_command, rsync_download_file
 
 
 flask_app = create_app()

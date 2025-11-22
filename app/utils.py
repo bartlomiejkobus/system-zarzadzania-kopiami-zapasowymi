@@ -1,8 +1,9 @@
-from flask import current_app
+from flask import current_app, request
 from app.models.settings import Settings
 import paramiko, io
 from app.models.backup_task import BackupTask
 from app.models.backup_file import BackupFile
+from app.models.server import Server
 import tempfile
 import os
 import subprocess
@@ -10,6 +11,11 @@ import hashlib
 from datetime import datetime
 from app.db import db
 from app.models.event import Event
+import string, secrets
+
+def generate_code(length=6):
+    return ''.join(secrets.choice(string.digits) for _ in range(length))
+
 
 def load_install_script():
     settings = Settings.query.first()
@@ -29,7 +35,7 @@ def load_install_script():
     return script
 
 
-def execute_ssh_command(server, cmd, username="backup_user", timeout=5):
+def execute_ssh_command(server, cmd, username="backup_user", timeout=60):
 
     private_key = get_private_key_for_paramiko()
 
@@ -141,12 +147,37 @@ def rsync_download_file(task_id, server, remote_path, local_path, username="back
 
 
 def log_event(details: str, type: str = "informacja", server_id: int = None, task_id: int = None):
+    timestamp = datetime.utcnow()
     event = Event(
         type=type,
         details=details,
-        timestamp=datetime.utcnow(),
+        timestamp=timestamp,
         server_id=server_id,
         task_id=task_id
     )
     db.session.add(event)
     db.session.commit()
+
+    if type == "błąd":
+        settings = Settings.query.first()
+
+        if settings and settings.are_notifications_enabled and settings.email_address:
+            from app.tasks_celery import send_email
+            server_name = Server.query.with_entities(Server.name).filter_by(id=server_id).scalar()
+            task_name = BackupTask.query.with_entities(BackupTask.name).filter_by(id=task_id).scalar()
+            
+            subject=f"Błąd - {timestamp.strftime('%Y-%m-%d %H:%M:%S')}"
+            body = f"""
+Wystąpił błąd w systemie kopii zapasowych:
+
+Szczegóły: {details}
+Czas wystąpienia: {timestamp.strftime('%Y-%m-%d %H:%M:%S')}
+Serwer: {server_name}
+Zadanie: {task_name}
+            """
+            send_email.delay(subject, body)
+        
+def get_client_info():
+    ip = request.headers.get('X-Forwarded-For', request.remote_addr).split(',')[0].strip()
+    ua = request.headers.get('User-Agent', 'unknown')
+    return ip, ua

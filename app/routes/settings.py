@@ -1,9 +1,9 @@
 from flask import Blueprint, render_template, request, session, current_app, url_for, flash, redirect
 from flask_login import login_required, current_user, logout_user
 from flask_mail import Message
-from app import mail
 from app.db import db
-import os, string, secrets
+import os
+from app.utils import generate_code
 
 settings_bp = Blueprint('settings', __name__, template_folder='templates')
 
@@ -21,10 +21,6 @@ def index():
     return render_template('settings.html', gpg_script_content=gpg_script_content, show_modal=show_modal)
 
 
-def generate_code(length=6):
-    return ''.join(secrets.choice(string.digits) for _ in range(length))
-
-
 @settings_bp.route('/settings/email', methods=['POST'])
 @login_required
 def send_verification_code():
@@ -38,16 +34,11 @@ def send_verification_code():
     session['pending_email'] = new_email
     session['verification_code'] = verification_code
     session['show_verification_modal'] = True
-
-    msg = Message(
-        subject="Kod weryfikacyjny - Potwierdzenie adresu e-mail",
-        sender=("Backup System", current_app.config['MAIL_USERNAME']),
-        recipients=[new_email],
-        body=f"Twój kod weryfikacyjny: {verification_code}"
-    )
-
     try:
-        mail.send(msg)
+        subject="Kod weryfikacyjny"
+        body=f"Twój kod weryfikacyjny: {verification_code}"
+        from app.tasks_celery import send_email
+        send_email.delay(subject, body, recipient=new_email)
         flash(f'Kod weryfikacyjny został wysłany na adres: {new_email}', 'info')
     except Exception as e:
         flash(f'Błąd wysyłki e-maila: {e}', 'danger')
@@ -159,4 +150,33 @@ def change_password():
 
     logout_user()
     flash('Hasło zostało pomyślnie zmienione. Zaloguj się ponownie.', 'success')
+    return redirect(url_for('auth.login'))
+
+
+@settings_bp.route('/settings/change-username', methods=['POST'])
+@login_required
+def change_username():
+    """Zmiana nazwy użytkownika z walidacją podstawową."""
+    new_username = request.form.get('username', '').strip()
+
+    if not new_username:
+        flash('Pole nazwy użytkownika nie może być puste.', 'warning')
+        return redirect(url_for('settings.index'))
+
+    if new_username == current_user.username:
+        flash('Nowa nazwa użytkownika musi różnić się od obecnej.', 'warning')
+        return redirect(url_for('settings.index'))
+
+    if not new_username.isalnum() and "_" not in new_username:
+        flash('Nazwa użytkownika może zawierać tylko litery, cyfry i znak _.', 'danger')
+        return redirect(url_for('settings.index'))
+
+    if len(new_username) < 4 or len(new_username) > 20:
+        flash('Nazwa użytkownika musi mieć od 4 do 20 znaków.', 'warning')
+        return redirect(url_for('settings.index'))
+
+    current_user.username = new_username
+    db.session.commit()
+    flash('Nazwa użytkownika została zmieniona. Zaloguj się ponownie.', 'success')
+    logout_user()
     return redirect(url_for('auth.login'))

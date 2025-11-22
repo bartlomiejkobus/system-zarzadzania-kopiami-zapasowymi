@@ -20,7 +20,26 @@
 <div class="container">
   <h1>Ustawienia konta</h1>
   <hr />
-
+  <div class="mb-4">
+    <h3>Zmiana nazwy użytkownika</h3>
+    <form method="POST" action="/settings/change-username">
+      <div class="mb-3">
+        <label for="username" class="form-label">Nazwa użytkownika</label>
+        <input
+          type="text"
+          class="form-control"
+          id="username"
+          name="username"
+          value="{{ current_user.username }}"
+          required
+          pattern="[a-zA-Z0-9_]{4,20}"
+          title="Nazwa użytkownika musi mieć 4-20 znaków alfanumerycznych lub _"
+        />
+      </div>
+      <button type="submit" class="btn btn-warning">Zmień nazwę</button>
+    </form>
+  </div>
+  <hr />
   <div class="mb-4">
     <h3>Zmiana hasła</h3>
     <form method="POST" action="/settings/change-password">
@@ -115,8 +134,7 @@
             zapasowych.
           </p>
           <p>
-            Na swoim komputerze wygeneruj parę za pomocą poniższego skrytu
-            skryptu:
+            Na swoim komputerze wygeneruj parę za pomocą poniższego skryptu:
           </p>
 
           <div class="code-block position-relative mb-3">

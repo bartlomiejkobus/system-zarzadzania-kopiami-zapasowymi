@@ -3,23 +3,88 @@ zapasowych{% endblock %} {% block content %}
 <div class="mt-4">
   <h1>Dziennik zdarzeń</h1>
 
+  <div class="mb-3 d-flex align-items-center">
+    <a href="{{ url_for('logs.export_logs') }}" class="btn btn-primary me-3">
+      Eksportuj do CSV
+    </a>
+
+    <form method="get" class="d-flex flex-wrap align-items-center gap-2">
+      <span class="me-2">Filtruj po typie:</span>
+
+      <!-- Checkboxy typów -->
+      <div class="form-check form-check-inline">
+        <input class="form-check-input" type="checkbox" name="type" id="type_info" value="informacja"
+          {% if 'informacja' in selected_types %}checked{% endif %}>
+        <label class="form-check-label" for="type_info">Informacja</label>
+      </div>
+      <div class="form-check form-check-inline">
+        <input class="form-check-input" type="checkbox" name="type" id="type_error" value="błąd"
+          {% if 'błąd' in selected_types %}checked{% endif %}>
+        <label class="form-check-label" for="type_error">Błąd</label>
+      </div>
+      <div class="form-check form-check-inline">
+        <input class="form-check-input" type="checkbox" name="type" id="type_login" value="logowanie"
+          {% if 'logowanie' in selected_types %}checked{% endif %}>
+        <label class="form-check-label" for="type_login">Logowanie</label>
+      </div>
+
+      <!-- Filtr po dacie -->
+    <label for="start" class="ms-3 me-1">Od:</label>
+    <input type="date" id="start" name="start" class="form-control form-control-sm" value="{{ start_date }}" style="width: 120px;">
+
+    <label for="end" class="ms-2 me-1">Do:</label>
+    <input type="date" id="end" name="end" class="form-control form-control-sm" value="{{ end_date }}" style="width: 120px;">
+
+      <button type="submit" class="btn btn-secondary ms-2">Filtruj</button>
+
+          <!-- Przycisk resetuj filtry -->
+    <a href="{{ url_for('logs.index') }}" class="btn btn-outline-secondary ms-2">Resetuj filtry</a>
+    </form>
+  </div>
+
   {% if events %}
   <ul class="list-group mt-3">
     {% for event in events %}
     <li
       class="list-group-item {% if event.type == 'informacja' %}list-group-item-info {% elif event.type == 'błąd' %}list-group-item-danger {% elif event.type == 'logowanie' %}list-group-item-success{% endif %}"
     >
-      <strong>{{ event.timestamp.strftime("%Y-%m-%d %H:%M:%S") }}</strong>: {{
-      event.details }} {% if event.task %}
-      <em>(Zadanie: {{ event.task.name }})</em>
-      {% endif %} {% if event.server %}
-      <em>(Serwer: {{ event.server.name }})</em>
-      {% endif %}
+      <strong>{{ event.timestamp.strftime("%Y-%m-%d %H:%M:%S") }}</strong>: {{ event.details }}
+      {% if event.task %}<em>(Zadanie: {{ event.task.name }})</em>{% endif %}
+      {% if event.server %}<em>(Serwer: {{ event.server.name }})</em>{% endif %}
     </li>
     {% endfor %}
   </ul>
   {% else %}
   <p class="text-muted mt-3">Brak zdarzeń w dzienniku.</p>
   {% endif %}
+
+  {% if pagination.pages > 1 %}
+<nav aria-label="Page navigation" class="mt-3">
+  <ul class="pagination">
+    {% if pagination.has_prev %}
+    <li class="page-item">
+      <a class="page-link" href="{{ url_for('logs.index', page=pagination.prev_num, type=request.args.getlist('type'), start=start_date, end=end_date) }}">Poprzednia</a>
+    </li>
+    {% else %}
+    <li class="page-item disabled"><span class="page-link">Poprzednia</span></li>
+    {% endif %}
+
+    {% for p in range(1, pagination.pages + 1) %}
+    <li class="page-item {% if p == pagination.page %}active{% endif %}">
+      <a class="page-link" href="{{ url_for('logs.index', page=p, type=request.args.getlist('type'), start=start_date, end=end_date) }}">{{ p }}</a>
+    </li>
+    {% endfor %}
+
+    {% if pagination.has_next %}
+    <li class="page-item">
+      <a class="page-link" href="{{ url_for('logs.index', page=pagination.next_num, type=request.args.getlist('type'), start=start_date, end=end_date) }}">Następna</a>
+    </li>
+    {% else %}
+    <li class="page-item disabled"><span class="page-link">Następna</span></li>
+    {% endif %}
+  </ul>
+</nav>
+{% endif %}
 </div>
+
 {% endblock %}

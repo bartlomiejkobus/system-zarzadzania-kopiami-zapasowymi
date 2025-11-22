@@ -638,6 +638,70 @@ fi
 echo "[INFO] Zapisano plik sudoers: $SUDOERS_FILE"
 log "INFO" "wrote sudoers file: $SUDOERS_FILE" "install"
 
+
+# Sprawdzenie, czy rsync jest zainstalowane
+if ! command -v rsync >/dev/null 2>&1; then
+    echo "[INFO] rsync nie jest zainstalowane — instalowanie..."
+    log "INFO" "rsync not installed — installing" "install"
+
+    if command -v apt >/dev/null 2>&1; then
+        apt update && apt install -y rsync
+    elif command -v dnf >/dev/null 2>&1; then
+        dnf install -y rsync
+    elif command -v yum >/dev/null 2>&1; then
+        yum install -y rsync
+    elif command -v apk >/dev/null 2>&1; then
+        apk add --no-cache rsync
+    elif command -v pacman >/dev/null 2>&1; then
+        pacman -Sy --noconfirm rsync
+    else
+        echo "[ERROR] Nie udało się zainstalować rsync — nieobsługiwany menedżer pakietów." >&2
+        log "ERROR" "Unable to install rsync — unsupported package manager" "install"
+        exit 1
+    fi
+
+    echo "[INFO] rsync zainstalowane."
+    log "INFO" "rsync installed" "install"
+fi
+
+# Sprawdzenie, czy rrsync znajduje się w /usr/bin/rrsync
+if [ ! -f /usr/bin/rrsync ]; then
+    echo "[INFO] rrsync nie znajduje się w /usr/bin/rrsync — próba utworzenia..."
+    log "INFO" "rrsync missing — attempting to create" "install"
+
+    # Typowe lokalizacje rrsync (z pakietu rsync)
+    POSSIBLE_RRSYNC_LOCATIONS=(
+        "/usr/share/doc/rsync/support/rrsync"
+        "/usr/share/rsync/support/rrsync"
+        "/usr/lib/rsync/support/rrsync"
+        "/usr/share/examples/rsync/rrsync"
+    )
+
+    FOUND_RRSYNC=""
+
+    for loc in "${POSSIBLE_RRSYNC_LOCATIONS[@]}"; do
+        if [ -f "$loc" ]; then
+            FOUND_RRSYNC="$loc"
+            break
+        fi
+    done
+
+    if [ -n "$FOUND_RRSYNC" ]; then
+        cp "$FOUND_RRSYNC" /usr/bin/rrsync
+        chmod +x /usr/bin/rrsync
+        echo "[INFO] rrsync skopiowany do /usr/bin/rrsync i oznaczony jako wykonywalny."
+        log "INFO" "rrsync installed to /usr/bin/rrsync" "install"
+    else
+        echo "[WARN] Nie znaleziono źródła rrsync w standardowych lokalizacjach."
+        echo "[WARN] Możliwe, że pakiet rsync nie zawiera rrsync w tej dystrybucji."
+        log "WARN" "rrsync source not found" "install"
+    fi
+else
+    echo "[INFO] rrsync jest już obecny w /usr/bin/rrsync."
+    log "INFO" "rrsync already exists" "install"
+fi
+
+
 # Sprawdzenie czy gpg jest zainstalowane i import klucza publicznego administratora
 install_gnupg_if_needed
 

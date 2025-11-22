@@ -17,7 +17,7 @@ endblock %} {% block content %}
           aria-expanded="false"
           aria-controls="collapse{{ task.id }}"
         >
-          {{ task.name }} - {{ task.server.name if task.server else '-' }}
+          {{ task.name }}{% if task.deleted %} (Usunięte){% endif %} - {{ task.server.name}}{% if task.server.deleted %} (Usunięte){% endif %}
         </button>
       </h2>
       <div

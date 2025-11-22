@@ -7,6 +7,9 @@ from app.utils import execute_ssh_command, rsync_download_file, log_event
 from app.db import db
 import os
 from app.config import Config
+from flask_mail import Message
+from app import mail
+from app.models.settings import Settings
 
 @celery.task
 def check_scheduled_backups():
@@ -25,32 +28,73 @@ def check_scheduled_backups():
                 run_backup_task_celery.delay(task.id)
 
 
-@celery.task(bind=True)
+@celery.task(bind=True, max_retries=3)
 def run_backup_task_celery(self, task_id):
     with flask_app.app_context():
+
         task = BackupTask.query.get(task_id)
         if not task:
-            log_event(f"Nie znaleziono zadania.", type="błąd", task_id=task.id, server_id=task.server.id)
+            log_event(
+                "Nie znaleziono zadania.",
+                type="błąd",
+                task_id=task_id
+            )
             return {"success": False, "message": "Nie znaleziono zadania."}
 
-        task_name = task.name
         server = task.server
+        task_name = task.name
+
+        def schedule_retry(error_message):
+
+            current_retry = self.request.retries
+            max_retry = self.max_retries
+
+            log_event(
+                f"Próba {current_retry + 1} z {max_retry + 1}: {error_message}",
+                type="informacja",
+                task_id=task.id,
+                server_id=server.id
+            )
+
+            if current_retry >= max_retry:
+                task.last_status = "błąd"
+                db.session.commit()
+
+                log_event(
+                    f"Błąd po 3 próbach ponowienia: {error_message}",
+                    type="błąd",
+                    task_id=task.id,
+                    server_id=server.id
+                )
+
+                return {"success": False, "message": error_message}
+
+
+            retry_intervals = [60, 300, 600]
+            delay = retry_intervals[current_retry]
+
+            raise self.retry(
+                exc=Exception(error_message),
+                countdown=delay
+            )
+
 
         success, output, error_output, exit_status = execute_ssh_command(
-            server, f"run_backup {task_name}", timeout=120
+            server,
+            f"run_backup {task_name}",
+            timeout=900
         )
 
         if not success:
-            task.last_status = "błąd"
-            db.session.commit()
-            log_event(f"Błąd wykonania kopii zapasowej: {error_output}", type="błąd", task_id=task.id, server_id=task.server.id)
-            return {"success": False, "message": f"Błąd wykonania kopii zapasowej: {error_output}"}
+            return schedule_retry(
+                f"Błąd wykonania backupu."
+            )
 
         if not output:
-            task.last_status = "błąd"
-            db.session.commit()
-            log_event(f"Nie znaleziono pliku kopii zapasowej.", type="błąd", task_id=task.id, server_id=task.server.id)
-            return {"success": False, "message": "Nie znaleziono pliku kopii zapasowej."}
+            return schedule_retry(
+                "Nie znaleziono pliku backupu."
+            )
+
 
         local_path = Config.BACKUP_FOLDER
 
@@ -61,15 +105,30 @@ def run_backup_task_celery(self, task_id):
             local_path=local_path
         )
 
+        if success:
+            log_event(
+                f"Pomyślnie pobrano plik backupu: {output}.",
+                type="informacja",
+                task_id=task.id,
+                server_id=server.id
+            )
+
+
         if not success:
-            task.last_status = "błąd"
-            db.session.commit()
-            log_event(f"Błąd pobierania pliku: {err}", type="błąd", task_id=task.id, server_id=task.server.id)
-            return {"success": False, "message": f"Błąd pobierania pliku: {err}"}
+            return schedule_retry(
+                f"Błąd pobierania pliku: {output}"
+            )
+
 
         task.last_status = "sukces"
         db.session.commit()
-        log_event(f"Kopia zapasowa wykonana poprawnie", type="informacja", task_id=task.id, server_id=task.server.id)
+
+        log_event(
+            "Kopia zapasowa wykonana poprawnie",
+            type="informacja",
+            task_id=task.id,
+            server_id=server.id
+        )
 
         return {
             "success": True,
@@ -93,7 +152,7 @@ def cleanup_old_backups():
                     os.remove(file.path)
                     print(f"Usunięto plik backupu: {file.path}")
                 except Exception as e:
-                    print(f"Błąd przy usuwaniu pliku {file.path}: {e}")
+                    print(f"Błąd przy usuwaniu pliku {file.path}.")
             else:
                 print(f"Plik {file.path} nie istnieje, pomijam.")
 
@@ -101,3 +160,29 @@ def cleanup_old_backups():
             db.session.add(file)
 
     db.session.commit()
+    
+
+@celery.task(bind=True)
+def send_email(self, subject: str, body: str, recipient: str = None):
+    with flask_app.app_context():
+        if not recipient:
+            settings = Settings.query.first()
+            if not settings or not settings.email_address:
+                flask_app.logger.warning("No email recipient set.")
+                return False
+            recipient = settings.email_address
+
+
+        try:
+            msg = Message(
+                subject=subject,
+                sender=("System kopii zapasowych", flask_app.config["MAIL_USERNAME"]),
+                recipients=[recipient],
+                body=body
+            )
+            mail.send(msg)
+            return True
+        except Exception as e:
+            
+            
+            return False

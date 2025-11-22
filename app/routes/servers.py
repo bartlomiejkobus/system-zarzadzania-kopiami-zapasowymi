@@ -107,7 +107,7 @@ def delete():
 
     db.session.commit()
 
-    flash(f"Usunięto {len(servers)} serwer/y.", "success")
+    flash(f"Usunięto {len(servers)} serwer/y oraz powiązane zadania.", "success")
     return redirect(url_for("servers.index"))
 
 
@@ -118,7 +118,7 @@ def test_server_connection(server_id):
     server = Server.query.get_or_404(server_id)
 
     success, output, error_output, exit_status = execute_ssh_command(
-        server, "check"
+        server, "check", timeout=5
     )
 
     server.status = "aktywny" if success else "nieaktywny"

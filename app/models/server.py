@@ -19,6 +19,8 @@ class Server(db.Model):
 
     def mark_deleted(self):
         self.deleted = True
+        for task in self.backup_tasks:
+            task.mark_deleted()
 
     def restore(self):
         self.deleted = False

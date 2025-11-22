@@ -1,0 +1,118 @@
+services:
+  traefik:
+    image: traefik:v3.6.2
+    container_name: traefik
+    restart: always
+    command:
+      - "--api.dashboard=false"
+      - "--providers.docker=true"
+      - "--providers.docker.endpoint=unix:///var/run/docker.sock"
+      - "--providers.docker.exposedByDefault=false"
+      - "--entryPoints.web.address=:80"
+      - "--entryPoints.websecure.address=:443"
+      - "--entryPoints.web.http.redirections.entryPoint.to=websecure"
+      - "--entryPoints.web.http.redirections.entryPoint.scheme=https"
+      - "--entryPoints.websecure.http.tls=true"
+      - "--log.level=INFO"
+      - "--log.format=common"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - traefik
+  mysql:
+    image: mysql:8.1
+    container_name: mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "mysql", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    networks:
+      - traefik
+
+  redis:
+    image: redis:7
+    container_name: redis
+    restart: always
+    networks:
+      - traefik
+
+  web:
+    build: .
+    container_name: flask_app
+    restart: always
+    env_file:
+      - .env
+    volumes:
+      - backup_data:/root/backup_files
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    environment:
+      SERVICE: web
+    networks:
+      - traefik
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.flask.rule=Host(`backup-manager.local`) || PathPrefix(`/`)"
+      - "traefik.http.routers.flask.entrypoints=websecure"
+      - "traefik.http.services.flask.loadbalancer.server.port=8000"
+
+  celery_worker:
+    build: .
+    container_name: celery_worker
+    restart: always
+    env_file:
+      - .env
+    volumes:
+      - backup_data:/root/backup_files
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    environment:
+      SERVICE: celery_worker
+    networks:
+      - traefik
+
+  celery_beat:
+    build: .
+    container_name: celery_beat
+    restart: always
+    env_file:
+      - .env
+    volumes:
+      - backup_data:/root/backup_files
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    environment:
+      SERVICE: celery_beat
+    networks:
+      - traefik
+
+volumes:
+  mysql_data:
+  backup_data:
+
+
+networks:
+  traefik:
+    external: false

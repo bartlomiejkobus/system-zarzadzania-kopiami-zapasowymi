@@ -50,6 +50,9 @@ def add():
         return redirect(url_for("tasks.index"))
 
     try:
+        fields = schedule.strip().split()
+        if len(fields) != 5:
+            raise ValueError
         croniter(schedule)
     except (ValueError, KeyError):
         flash("Niepoprawny format harmonogramu. Użyj składni crona, np. '0 3 * * *'.", "danger")
@@ -97,6 +100,9 @@ def edit(task_id):
         return redirect(url_for("tasks.index"))
 
     try:
+        fields = new_schedule.strip().split()
+        if len(fields) != 5:
+            raise ValueError
         croniter(new_schedule)
     except (ValueError, KeyError):
         flash("Niepoprawny format harmonogramu. Użyj składni crona, np. '0 3 * * *'.", "danger")

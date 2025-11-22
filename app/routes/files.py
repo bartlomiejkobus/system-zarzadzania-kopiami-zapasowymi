@@ -19,6 +19,7 @@ def index():
             'id': task.id,
             'name': task.name,
             'server': task.server,
+            'deleted': task.deleted,
             'files': []
         }
         for file in task.files:

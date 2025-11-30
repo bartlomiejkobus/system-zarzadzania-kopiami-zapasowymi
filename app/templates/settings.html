@@ -84,24 +84,19 @@
     <h3>Klucz publiczny GPG</h3>
     <form method="POST" action="/settings/gpg-key">
       <div class="mb-3">
-        <label for="gpg_key" class="form-label"
-          >Wprowadź klucz publiczny GPG</label
-        >
+        <label for="gpg_key" class="form-label">Wprowadź klucz publiczny GPG</label>
         <textarea
           class="form-control"
           id="gpg_key"
           name="gpg_key"
           rows="4"
           placeholder="-----BEGIN PGP PUBLIC KEY BLOCK-----"
-        >
-{{ current_user.public_key_gpg or '' }}</textarea
-        >
-
-        >
+        >{{ current_user.public_key_gpg or '' }}</textarea>
+        <small class="text-danger d-block mt-1">
+          UWAGA: Klucz będzie używany tylko dla serwerów dodanych w przyszłości.
+        </small>
         <small class="d-block mt-2">
-          <a href="#" data-bs-toggle="modal" data-bs-target="#gpgHelpModal"
-            >Skąd wziąć klucz?</a
-          >
+          <a href="#" data-bs-toggle="modal" data-bs-target="#gpgHelpModal">Skąd wziąć klucz?</a>
         </small>
       </div>
       <button type="submit" class="btn btn-warning">Zapisz klucz</button>

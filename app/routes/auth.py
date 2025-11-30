@@ -87,6 +87,11 @@ def reset_password():
             flash("Niepoprawny kod resetu.", "danger")
             return redirect(url_for('auth.reset_password'))
 
+        default_password = current_app.config.get('DEFAULT_ADMIN_PASSWORD')
+        if default_password and new_password == default_password:
+            flash('Nie możesz ustawić hasła identycznego z domyślnym hasłem systemowym.', 'danger')
+            return redirect(url_for('auth.reset_password'))
+
         if new_password != confirm_password:
             flash("Hasła nie są zgodne.", "danger")
             return redirect(url_for('auth.reset_password'))

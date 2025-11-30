@@ -12,7 +12,8 @@ def seed_default_admin():
                 default_password = app.config["DEFAULT_ADMIN_PASSWORD"]
 
                 default_settings = Settings(username=default_username)
-                default_settings.set_password(default_password, default_password=default_password)
+                default_settings.set_password(default_password)
+                default_settings.is_default_password = True
                 default_settings.generate_ssh_keys()
 
                 db.session.add(default_settings)

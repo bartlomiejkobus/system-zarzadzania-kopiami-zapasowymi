@@ -31,17 +31,9 @@ class Settings(db.Model, UserMixin):
     rsync_public_key_ssh = db.Column(db.Text, nullable=True)
     rsync_private_key_ssh = db.Column(db.Text, nullable=True)
 
-    def set_password(self, password: str, default_password: str = None):
+    def set_password(self, password: str):
         self.password_hash = ph.hash(password)
-
-        if default_password:
-            try:
-                ph.verify(self.password_hash, default_password)
-                self.is_default_password = True
-            except VerifyMismatchError:
-                self.is_default_password = False
-        else:
-            self.is_default_password = False
+        self.is_default_password = False
 
     def check_password(self, password: str) -> bool:
         try:

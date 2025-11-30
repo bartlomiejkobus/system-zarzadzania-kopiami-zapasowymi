@@ -97,11 +97,10 @@ def delete():
                     s, "uninstall"
                 )
                 if not success:
-                    print(f"Błąd uninstall na {s.hostname}: {error_output}")
+                    flash(f"Błąd deinstalacji na serwerze {s.hostname}.", "warning")
             except Exception as e:
-                print(f"Błąd uninstall na {s.hostname}: {e}")
-        else:
-            print(f"Serwer {s.hostname} nieaktywny - pomijam uninstall po SSH")
+                flash(f"Błąd deinstalacji na serwerze {s.hostname}.", "warning")
+
 
         s.mark_deleted()
 

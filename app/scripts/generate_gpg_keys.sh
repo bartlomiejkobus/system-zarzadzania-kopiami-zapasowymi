@@ -13,6 +13,7 @@ Subkey-Length: 4096
 Name-Real: Backup System Key
 Name-Email: backup@local
 Expire-Date: 0
+%no-protection
 %commit
 EOF
 

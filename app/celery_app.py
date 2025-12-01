@@ -35,6 +35,7 @@ celery.conf.beat_schedule.update({
     },
 })
 
-celery.conf.timezone = 'Europe/Warsaw'
+celery.conf.enable_utc = True
+celery.conf.timezone = 'UTC'
 
 import app.tasks_celery

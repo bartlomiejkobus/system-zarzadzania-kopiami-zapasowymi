@@ -1,6 +1,6 @@
 from app.db import db
 from sqlalchemy import Enum
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 class Event(db.Model):
@@ -25,7 +25,11 @@ class Event(db.Model):
         nullable=False
     )
 
-    timestamp = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    timestamp = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc)
+    )
 
     details = db.Column(db.Text, nullable=False)
 

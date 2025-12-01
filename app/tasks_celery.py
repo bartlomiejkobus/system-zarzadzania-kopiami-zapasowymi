@@ -2,7 +2,7 @@ from app.celery_app import celery, flask_app
 from app.models.backup_task import BackupTask
 from app.models.backup_file import BackupFile
 from croniter import croniter
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from app.utils import execute_ssh_command, rsync_download_file, log_event
 from app.db import db
 import os
@@ -14,7 +14,7 @@ from app.models.settings import Settings
 @celery.task
 def check_scheduled_backups():
     with flask_app.app_context():
-        now = datetime.now()
+        now = datetime.now(timezone.utc)
         tasks = BackupTask.query.filter_by(deleted=False).all()
 
         for task in tasks:
@@ -139,9 +139,8 @@ def run_backup_task_celery(self, task_id):
 
 @celery.task
 def cleanup_old_backups():
-    now = datetime.now()
+    now = datetime.now(timezone.utc)
 
-    now = datetime.now()
     files = BackupFile.query.filter_by(deleted=False).all()
 
     for file in files:

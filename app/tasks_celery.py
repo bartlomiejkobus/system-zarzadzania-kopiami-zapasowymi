@@ -87,12 +87,12 @@ def run_backup_task_celery(self, task_id):
 
         if not success:
             return schedule_retry(
-                f"Błąd wykonania backupu."
+                f"Błąd wykonania kopii zapasowej."
             )
 
         if not output:
             return schedule_retry(
-                "Nie znaleziono pliku backupu."
+                "Nie znaleziono pliku kopii zapasowej."
             )
 
 
@@ -107,7 +107,7 @@ def run_backup_task_celery(self, task_id):
 
         if success:
             log_event(
-                f"Pomyślnie pobrano plik backupu: {output}.",
+                f"Pomyślnie pobrano plik kopii zapasowej: {output}.",
                 type="informacja",
                 task_id=task.id,
                 server_id=server.id
@@ -132,7 +132,7 @@ def run_backup_task_celery(self, task_id):
 
         return {
             "success": True,
-            "message": f"Pobrano plik backupu: {output}",
+            "message": f"Pobrano plik kopii zapasowej: {output}",
             "remote_path": output
         }
 
@@ -149,11 +149,11 @@ def cleanup_old_backups():
             if os.path.exists(file.path):
                 try:
                     os.remove(file.path)
-                    print(f"Usunięto plik backupu: {file.path}")
+                    print(f"Usunięto plik kopii zapasowej: {file.path}")
                 except Exception as e:
                     print(f"Błąd przy usuwaniu pliku {file.path}.")
             else:
-                print(f"Plik {file.path} nie istnieje, pomijam.")
+                print(f"Plik {file.path} nie istnieje, pominięto.")
 
             file.mark_deleted()
             db.session.add(file)

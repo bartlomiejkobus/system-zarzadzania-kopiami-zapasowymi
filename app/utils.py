@@ -8,7 +8,7 @@ import tempfile
 import os
 import subprocess
 import hashlib
-from datetime import datetime
+from datetime import datetime, timezone
 from app.db import db
 from app.models.event import Event
 import string, secrets
@@ -115,7 +115,7 @@ def rsync_download_file(task_id, server, remote_path, local_path, username="back
         if success:
             if os.path.exists(file_path):
                 size = os.path.getsize(file_path)
-                creation_time = datetime.datetime.fromtimestamp(os.path.getctime(file_path),tz=datetime.timezone.utc)
+                creation_time = datetime.fromtimestamp(os.path.getctime(file_path),tz=timezone.utc)
                 sha256_hash = hashlib.sha256()
                 with open(file_path, "rb") as f:
                     for byte_block in iter(lambda: f.read(4096), b""):
@@ -146,7 +146,7 @@ def rsync_download_file(task_id, server, remote_path, local_path, username="back
 
 
 def log_event(details: str, type: str = "informacja", server_id: int = None, task_id: int = None):
-    timestamp = datetime.datetime.now(datetime.timezone.utc)
+    timestamp = datetime.now(timezone.utc)
 
     event = Event(
         type=type,

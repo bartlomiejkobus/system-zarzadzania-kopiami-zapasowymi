@@ -164,5 +164,5 @@ def run_backup():
 
     run_backup_task_celery.delay(task_id)
 
-    flash("Backup został uruchomiony w tle.", "info")
+    flash("Wykonanie kopii zapasowej uruchomione w tle.", "info")
     return redirect(url_for("tasks.index"))

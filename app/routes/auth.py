@@ -45,7 +45,7 @@ def login():
             send_email.delay(subject, body)
             flash("Kod weryfikacyjny został wysłany na Twój adres e-mail.", "info")
         except Exception as e:
-            flash(f"Błąd wysyłki e-mail: {e}", "danger")
+            flash(f"Błąd wysyłki e-mail.", "danger")
             session.pop('2fa_user_id', None)
             session.pop('2fa_code', None)
             return render_template('login.html')
@@ -116,7 +116,7 @@ def reset_password():
             send_email.delay(subject, body)
             flash(f"Kod resetu został wysłany. Sprawdź skrzynkę.", "info")
         except Exception as e:
-            flash(f"Błąd wysyłki e-mail: {e}", "danger")
+            flash(f"Błąd wysyłki e-mail.", "danger")
             session.pop('reset_code', None)
 
 

@@ -33,7 +33,6 @@ class Event(db.Model):
 
     details = db.Column(db.Text, nullable=False)
 
-    # Relacje
     server = db.relationship("Server", back_populates="events", lazy=True)
     task = db.relationship("BackupTask", back_populates="events", lazy=True)
 

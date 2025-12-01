@@ -40,7 +40,7 @@ def add():
         (Server.name == name) | (Server.hostname == hostname)
     ).first()
     if exists:
-        flash("Serwer o tej nazwie lub hostie już istnieje.", "danger")
+        flash("Serwer o tej nazwie lub host już istnieje.", "danger")
         return redirect(url_for("servers.index"))
 
     server = Server(name=name, hostname=hostname, port=port)

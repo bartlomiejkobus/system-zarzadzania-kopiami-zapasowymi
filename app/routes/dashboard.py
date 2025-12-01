@@ -19,7 +19,6 @@ def index():
     fails_count = tasks.filter_by(last_status="błąd").count()
     file_count = BackupFile.query.filter_by(deleted=False).count()
 
-    # Ostatnie 5 błędów
     last_errors = Event.query.filter_by(type="błąd").order_by(Event.timestamp.desc()).limit(5).all()
 
     return render_template(

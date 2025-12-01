@@ -255,16 +255,19 @@ endblock %} {% block content %}
 </div>
 {% endblock %} {% block js %}
 <script>
+  // Pobieranie elementów interfejsu
   const selectAll = document.getElementById("select-all");
   const checkboxes = document.querySelectorAll(".select-server");
   const editBtn = document.getElementById("edit-server");
   const deleteBtn = document.getElementById("delete-server");
 
+  // Zaznaczanie/odznaczanie wszystkich checkboxów
   selectAll.addEventListener("change", () => {
     checkboxes.forEach((cb) => (cb.checked = selectAll.checked));
     updateButtons();
   });
 
+  // Aktualizowanie stanu przycisków (edycja tylko 1 zaznaczony, usuwanie >=1)
   function updateButtons() {
     const anyChecked = Array.from(checkboxes).some((cb) => cb.checked);
     const singleChecked =
@@ -274,8 +277,10 @@ endblock %} {% block content %}
     deleteBtn.disabled = !anyChecked;
   }
 
+  // Reakcja na zmianę zaznaczenia pojedynczego checkboxa
   checkboxes.forEach((cb) => cb.addEventListener("change", updateButtons));
 
+  // Otwieranie modala dodawania serwera
   document.getElementById("add-server").addEventListener("click", () => {
     const modal = new bootstrap.Modal(
       document.getElementById("addServerModal")
@@ -283,6 +288,7 @@ endblock %} {% block content %}
     modal.show();
   });
 
+  // Otwieranie modala edycji serwera (tylko gdy zaznaczono dokładnie 1)
   document.getElementById("edit-server").addEventListener("click", () => {
     const checked = Array.from(
       document.querySelectorAll(".select-server")
@@ -292,7 +298,8 @@ endblock %} {% block content %}
 
     const serverId = checked[0].dataset.serverId;
     const serverName = checked[0].closest("tr").children[1].innerText;
-
+    
+    // Obsługa usuwania serwerów (można zaznaczyć wiele)
     document.getElementById("edit-server-name").value = serverName;
     document.getElementById("edit-server-form").action =
       "/servers/edit/" + serverId;
@@ -314,6 +321,7 @@ endblock %} {% block content %}
     );
     modal.show();
 
+    // Po potwierdzeniu dynamicznie tworzymy pola w formularzu i wysyłamy
     document.getElementById("confirm-delete").onclick = () => {
       const form = document.getElementById("delete-form");
       form.innerHTML = "";
@@ -329,18 +337,25 @@ endblock %} {% block content %}
       form.submit();
     };
   });
+
+  // Kopiowanie przykładowego kodu z bloku <code>
   function copyCode(btn) {
     const code = btn.closest(".code-block").querySelector("code").innerText;
     navigator.clipboard.writeText(code);
     btn.innerText = "Skopiowano!";
     setTimeout(() => (btn.innerText = "Skopiuj kod"), 1500);
   }
+
+  // ID serwera używanego w modalu aktywacji
   let CURRENT_SERVER_ID = null;
 
+  // Otwieranie modala aktywacji serwera
   function activateServer(id) {
     CURRENT_SERVER_ID = id;
     new bootstrap.Modal(document.getElementById("activateServerModal")).show();
   }
+
+    // Testowanie połączenia z serwerem
   function testServerConnection() {
     const btn = document.getElementById("test-connection-btn");
     const statusDiv = document.getElementById("connection-status");
@@ -351,13 +366,16 @@ endblock %} {% block content %}
     btn.innerText = "Sprawdzanie połączenia...";
     statusDiv.innerHTML = "";
 
+    // Zapytanie POST do endpointu testującego połączenie
     fetch(`/servers/test-connection/${CURRENT_SERVER_ID}`, { method: "POST" })
       .then((res) => res.json())
       .then((data) => {
+        // Udane połączenie
         if (data.success) {
           statusDiv.innerHTML =
             '<div class="alert alert-success mb-0">Połączenie udane - serwer aktywowany!</div>';
 
+          // Po zamknięciu modala — odśwież stronę
           modalEl.addEventListener(
             "hidden.bs.modal",
             () => {
@@ -366,15 +384,16 @@ endblock %} {% block content %}
             { once: true }
           );
         } else {
+          // Błąd po stronie serwera lub walidacji
           statusDiv.innerHTML = `<div class="alert alert-danger mb-0">
                     Błąd połączenia. Sprawdź czy skrypt został poprawnie wykonany, 
                     dane serwera są poprawne i połączenie jest dostępne.<br>
-                    Szczegóły: ${data.error}
                 </div>`;
         }
       })
       .catch((err) => {
-        statusDiv.innerHTML = `<div class="alert alert-danger mb-0">Błąd sieci: ${err}</div>`;
+        // Błąd sieciowy
+        statusDiv.innerHTML = `<div class="alert alert-danger mb-0">Błąd sieci.</div>`;
       })
       .finally(() => {
         btn.disabled = false;
